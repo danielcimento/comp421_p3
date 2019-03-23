@@ -2,6 +2,8 @@ package db
 
 import java.sql._
 import java.net.InetAddress
+import java.util.UUID
+
 import com.jcraft.jsch._
 
 // This class will hold all the logic that connects to the database and executes our queries
@@ -9,6 +11,34 @@ import com.jcraft.jsch._
 class DatabaseInterface(val password: String) {
   val connection: Connection = establishConnection
 
+
+  // TODO: Change user_id to username
+  def getFriendsWhoOwn(username: String, gameName: String): Iterator[String] = {
+    val statement = connection.prepareStatement(
+      """
+          | select username from
+          | (select u.user_id, username from users u
+          | join friends f on u.user_id = f.user_id where f.friend_id = (select user_id from users where username = (?))
+          | union
+          | select friend_id as user_id, username from users u
+          | join friends f on u.user_id = f.friend_id where f.user_id = (select user_id from users where username = (?))) my_friends
+          | join
+          | (select name, user_id from games g
+          | join owns o on g.game_id = o.game_id) owned_games
+          | on owned_games.user_id = my_friends.user_id
+          | where owned_games.name = (?);
+      """.stripMargin)
+    statement.setString(1, username)
+    statement.setString(2, username)
+    statement.setString(3, gameName)
+
+
+    val rs = statement.executeQuery()
+    new Iterator[String] {
+      def hasNext = rs.next()
+      def next() = rs.getString("username")
+    }
+  }
 
   private def establishConnection: Connection = {
     val lport = 5432

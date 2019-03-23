@@ -13,6 +13,7 @@ object Main extends App {
   class COMP421_P3 extends Application {
     override def start(primaryStage: Stage): Unit = {
       primaryStage.setTitle("COMP421 P3")
+      primaryStage.setResizable(false)
 
       // TODO: See if we can mask the password when typing (low priority)
       val passwordPrompt = new TextInputDialog()
