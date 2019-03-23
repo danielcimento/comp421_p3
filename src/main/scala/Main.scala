@@ -1,6 +1,8 @@
-import javafx.application.Application
+import db.DatabaseInterface
+import javafx.application.{Application, Platform}
 import javafx.scene.Scene
-import javafx.stage.Stage
+import javafx.scene.control.{Alert, TextInputDialog}
+import javafx.stage.{Stage, WindowEvent}
 import ui.OperationsTabPane
 
 object Main extends App {
@@ -12,9 +14,18 @@ object Main extends App {
     override def start(primaryStage: Stage): Unit = {
       primaryStage.setTitle("COMP421 P3")
 
-      primaryStage.setScene(new Scene(new OperationsTabPane(), 640, 480))
+      // TODO: See if we can mask the password when typing (low priority)
+      val passwordPrompt = new TextInputDialog()
+      passwordPrompt.setContentText("Please type password for user 'cs421g51': ")
+      passwordPrompt.setHeaderText("Database Password")
+      passwordPrompt.setTitle("Password")
 
-      primaryStage.show()
+      passwordPrompt
+        .showAndWait()
+          .ifPresent(pw => {
+            primaryStage.setScene(new Scene(new OperationsTabPane(new DatabaseInterface(pw)), 640, 480))
+            primaryStage.show()
+          })
     }
   }
 }
