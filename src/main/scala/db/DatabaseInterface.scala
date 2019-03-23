@@ -61,9 +61,27 @@ class DatabaseInterface(val password: String) {
           iid,
           lineItemData.head(1).asInstanceOf[Date],
           lineItemData.head(2).asInstanceOf[String],
-          lineItemData.map(li => GamePurchase(li(5).asInstanceOf[String], li(3).asInstanceOf[Int], li(4).asInstanceOf[String]))
+          lineItemData.map(li => GamePurchase(li(5).asInstanceOf[String], li(3).asInstanceOf[java.math.BigDecimal], li(4).asInstanceOf[String]))
         )
     }.toList
+  }
+
+  def refundInvoice(invoice: RefundableInvoice): Unit = {
+    val refundStatement = connection.prepareStatement(
+      """
+        | update invoices set refunded = true
+        | where invoice_id = (?);
+        |
+        | delete from owns
+        | where user_id = (select recipient_id from invoices where invoice_id = (?))
+        | and game_id in (select game_id from contains where invoice_id = (?));
+      """.stripMargin)
+
+    refundStatement.setObject(1, invoice.invoiceId)
+    refundStatement.setObject(2, invoice.invoiceId)
+    refundStatement.setObject(3, invoice.invoiceId)
+
+    refundStatement.executeUpdate()
   }
 
   private def establishConnection: Connection = {
@@ -93,5 +111,7 @@ class DatabaseInterface(val password: String) {
 
     val url: String = s"jdbc:postgresql://$rhost:$lport/cs421"
     DriverManager.getConnection(url, username, password)
+
+    // TODO: Make sure we close connection on termination.
   }
 }
