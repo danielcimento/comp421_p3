@@ -84,6 +84,36 @@ class DatabaseInterface(val password: String) {
     refundStatement.executeUpdate()
   }
 
+  def getAllCategories(): Iterator[String] = {
+    val select = connection.prepareStatement(
+      """
+        | select name from categories;
+      """.stripMargin)
+
+    val rs = select.executeQuery()
+    new Iterator[String] {
+      def hasNext = rs.next()
+      def next() = rs.getString("name")
+    }
+  }
+
+  def getGamesForCategory(category: String): Iterator[(String, String)] = {
+    val select = connection.prepareStatement(
+      """
+        | select name, developer from games
+        | join belongs_to b on games.game_id = b.game_id
+        | where category_name = (?);
+      """.stripMargin)
+
+    select.setString(1, category)
+
+    val rs = select.executeQuery()
+    new Iterator[(String, String)] {
+      def hasNext: Boolean = rs.next()
+      def next() = (rs.getString("name"), rs.getString("developer"))
+    }
+  }
+
   private def establishConnection: Connection = {
     val lport = 5432
     val rhost = "localhost"

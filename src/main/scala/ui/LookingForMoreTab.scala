@@ -31,7 +31,7 @@ class LookingForMoreTab(dbInterface: DatabaseInterface) extends Tab {
   resultsList.getItems.addListener(_ => resultsList.setDisable(resultsList.getItems.isEmpty))
 
   GridPane.setColumnSpan(resultsList, 3)
-  GridPane.setMargin(resultsList, new Insets(10, 10, 10, 10))
+  GridPane.setMargin(resultsList, new Insets(10))
 
   searchButton.setOnAction(_ => {
     resultsList.getItems.clear()

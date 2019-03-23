@@ -18,7 +18,8 @@ class IntroductionTab(parent: TabPane) extends Tab {
   val titles = List(
     tabName,
     new Text("Looking for More"),
-    new Text("Refunds")
+    new Text("Refunds"),
+    new Text("Browse by Category")
   )
   titles.foreach(GridPane.setHalignment(_, HPos.CENTER))
 
@@ -28,7 +29,8 @@ class IntroductionTab(parent: TabPane) extends Tab {
   val descriptions = List(
     tabDescription,
     new Text("Allows you to find all your friends who own a certain game."),
-    new Text("Allows you to view all of your paid invoices and request a refund.")
+    new Text("Allows you to view all of your paid invoices and request a refund."),
+    new Text("Shows all game categories and allows you to browse games by category.")
   )
   descriptions.foreach(GridPane.setHalignment(_, HPos.CENTER))
 

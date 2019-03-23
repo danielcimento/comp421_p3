@@ -9,7 +9,8 @@ class OperationsTabPane(databaseInterface: DatabaseInterface) extends TabPane {
   val introPane = new IntroductionTab(this)
   val lfmTab = new LookingForMoreTab(databaseInterface)
   val refundTab = new RefundTab(databaseInterface)
+  val categoriesTab = new CategoriesTab(databaseInterface)
 
   setTabClosingPolicy(TabClosingPolicy.UNAVAILABLE)
-  getTabs.addAll(introPane, lfmTab, refundTab)
+  getTabs.addAll(introPane, lfmTab, refundTab, categoriesTab)
 }
