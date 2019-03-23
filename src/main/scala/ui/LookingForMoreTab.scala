@@ -11,7 +11,7 @@ import javafx.scene.layout.{ColumnConstraints, GridPane}
 class LookingForMoreTab(dbInterface: DatabaseInterface) extends Tab {
   setText("Looking for More")
 
-  val mainPane = new GridPane()
+  val rootPane = new GridPane()
 
   val usernameLabel = new Label("My Username: ")
   GridPane.setMargin(usernameLabel, new Insets(10, 0, 0, 10))
@@ -45,15 +45,15 @@ class LookingForMoreTab(dbInterface: DatabaseInterface) extends Tab {
   val buttonCC = new ColumnConstraints()
   buttonCC.setPercentWidth(20)
 
-  mainPane.getColumnConstraints.addAll(unameCC, gnameCC, buttonCC)
-  mainPane.setHgap(20)
-  mainPane.setVgap(10)
+  rootPane.getColumnConstraints.addAll(unameCC, gnameCC, buttonCC)
+  rootPane.setHgap(20)
+  rootPane.setVgap(10)
 
-  mainPane.addRow(0, usernameLabel, gameNameLabel)
-  mainPane.addRow(1, usernameField, gameNameField, searchButton)
-  mainPane.addRow(2, resultsList)
+  rootPane.addRow(0, usernameLabel, gameNameLabel)
+  rootPane.addRow(1, usernameField, gameNameField, searchButton)
+  rootPane.addRow(2, resultsList)
 
-  setContent(mainPane)
+  setContent(rootPane)
 
   private def addToList(s: String) = {
     resultsList.getItems.add(s)

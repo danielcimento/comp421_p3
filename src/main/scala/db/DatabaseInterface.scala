@@ -11,8 +11,6 @@ import com.jcraft.jsch._
 class DatabaseInterface(val password: String) {
   val connection: Connection = establishConnection
 
-
-  // TODO: Change user_id to username
   def getFriendsWhoOwn(username: String, gameName: String): Iterator[String] = {
     val statement = connection.prepareStatement(
       """
@@ -38,6 +36,34 @@ class DatabaseInterface(val password: String) {
       def hasNext = rs.next()
       def next() = rs.getString("username")
     }
+  }
+
+  def getPayments(username: String): List[RefundableInvoice] = {
+    val statement = connection.prepareStatement(
+      """
+        | select iid, payment_date, username, sell_price, currency, name from
+        | (((select invoice_id as iid, payer_id, payment_date, recipient_id, refunded from invoices i) invcs join contains c
+        | on c.invoice_id = invcs.iid) k join games g on k.game_id = g.game_id) l join users u on u.user_id = l.recipient_id
+        | where refunded = false and payer_id = (select user_id from users where username = (?));
+      """.stripMargin)
+    statement.setString(1, username)
+
+    val rs = statement.executeQuery()
+    val columns = 1 to rs.getMetaData.getColumnCount map rs.getMetaData.getColumnName
+    val rawResults = Iterator.continually(rs).takeWhile(_.next()).map { rs =>
+      columns.map(rs.getObject)
+    }
+
+    // Group all our records by the invoice id
+    rawResults.toList.groupBy(_(0).asInstanceOf[UUID]).map {
+      case (iid, lineItemData) =>
+        RefundableInvoice(
+          iid,
+          lineItemData.head(1).asInstanceOf[Date],
+          lineItemData.head(2).asInstanceOf[String],
+          lineItemData.map(li => GamePurchase(li(5).asInstanceOf[String], li(3).asInstanceOf[Int], li(4).asInstanceOf[String]))
+        )
+    }.toList
   }
 
   private def establishConnection: Connection = {

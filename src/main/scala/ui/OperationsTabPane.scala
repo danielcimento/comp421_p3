@@ -8,7 +8,8 @@ class OperationsTabPane(databaseInterface: DatabaseInterface) extends TabPane {
   // All our 5 queries will be separate tabs in the tab pane
   val introPane = new IntroductionTab(this)
   val lfmTab = new LookingForMoreTab(databaseInterface)
+  val refundTab = new RefundTab(databaseInterface)
 
   setTabClosingPolicy(TabClosingPolicy.UNAVAILABLE)
-  getTabs.addAll(introPane, lfmTab)
+  getTabs.addAll(introPane, lfmTab, refundTab)
 }
