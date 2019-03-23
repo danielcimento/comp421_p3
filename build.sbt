@@ -72,3 +72,6 @@ libraryDependencies += "org.typelevel" %% "cats-core" % "1.4.0"
 
 // To learn more about multi-project builds, head over to the official sbt
 // documentation at http://www.scala-sbt.org/documentation.html
+
+libraryDependencies += "postgresql" % "postgresql" % "9.1-901-1.jdbc4"
+libraryDependencies += "com.jcraft" % "jsch" % "0.1.53"
