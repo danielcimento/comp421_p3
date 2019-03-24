@@ -161,7 +161,7 @@ class DatabaseInterface(val password: String) {
     statement.executeUpdate()
   }
 
-  def checkout(user: UUID): Unit = {
+  def checkout(user: UUID, recipient: String): Unit = {
     // TODO: Check if the recipient is eligible to receive the games
     // TODO: Create a new invoice object
     // TODO: Associate all the games in the user's shopping cart with the invoice at their current price
