@@ -22,6 +22,7 @@ object Main extends App {
         Platform.exit()
       })
 
+      // TODO: Retry on failed login
       val prompt = new LoginPrompt()
       prompt.showAndWait().ifPresent(x => x match {
         case Some((db, username)) =>
