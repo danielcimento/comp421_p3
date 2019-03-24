@@ -1,6 +1,7 @@
 package ui
 
 import java.text.NumberFormat
+import java.util.UUID
 
 import db.{DatabaseInterface, RefundableInvoice}
 import javafx.geometry.{HPos, Insets}
@@ -8,22 +9,14 @@ import javafx.scene.control._
 import javafx.scene.layout.{ColumnConstraints, GridPane, VBox}
 import javafx.scene.text.{Font, FontWeight, Text}
 
-class RefundTab(dbInterface: DatabaseInterface) extends Tab {
+class RefundTab(dbInterface: DatabaseInterface, userId: UUID) extends Tab {
   setText("Refunds")
 
   val rootPane = new GridPane()
 
-  val unameLabel = new Label("My Username: ")
-  GridPane.setMargin(unameLabel, new Insets(10, 0, 0, 10))
-  val unameField = new TextField()
-  GridPane.setMargin(unameField, new Insets(10, 0, 0, 10))
-  val searchButton = new Button("Search Invoices")
-  GridPane.setMargin(searchButton, new Insets(10, 10, 0, 0))
-  GridPane.setHalignment(searchButton, HPos.RIGHT)
-
-  searchButton.setOnAction(_ => {
+  setOnSelectionChanged(_ => {
     invoices.getPanes.setAll(
-      dbInterface.getPayments(unameField.getText) map formatInvoice: _*
+      dbInterface.getPayments(userId) map formatInvoice: _*
     )
   })
 
@@ -31,20 +24,17 @@ class RefundTab(dbInterface: DatabaseInterface) extends Tab {
   GridPane.setMargin(invoicesLabel, new Insets(10, 0, 0, 10))
 
   val invoices = new Accordion()
-  GridPane.setColumnSpan(invoices, 3)
+  GridPane.setColumnSpan(invoices, 2)
   GridPane.setMargin(invoices, new Insets(10, 10, 10, 10))
 
   val cc1 = new ColumnConstraints()
   cc1.setPercentWidth(20)
   val cc2 = new ColumnConstraints()
-  cc2.setPercentWidth(60)
-  val cc3 = new ColumnConstraints()
-  cc3.setPercentWidth(20)
-  rootPane.getColumnConstraints.addAll(cc1, cc2, cc3)
+  cc2.setPercentWidth(80)
+  rootPane.getColumnConstraints.addAll(cc1, cc2)
 
-  rootPane.addRow(0, unameLabel, unameField, searchButton)
-  rootPane.addRow(1, invoicesLabel)
-  rootPane.addRow(2, invoices)
+  rootPane.add(invoicesLabel, 0, 0)
+  rootPane.addRow(1, invoices)
 
   setContent(rootPane)
 

@@ -75,3 +75,5 @@ libraryDependencies += "org.typelevel" %% "cats-core" % "1.4.0"
 
 libraryDependencies += "postgresql" % "postgresql" % "9.1-901-1.jdbc4"
 libraryDependencies += "com.jcraft" % "jsch" % "0.1.53"
+
+fork in run := true

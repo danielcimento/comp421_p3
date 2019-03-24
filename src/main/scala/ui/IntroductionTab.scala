@@ -17,33 +17,35 @@ class IntroductionTab(parent: TabPane) extends Tab {
 
   val titles = List(
     tabName,
+    new Text("Browse by Category"),
     new Text("Looking for More"),
     new Text("Refunds"),
-    new Text("Browse by Category")
+    new Text("Payment Methods"),
+    new Text("Checkout")
   )
-  titles.foreach(GridPane.setHalignment(_, HPos.CENTER))
+  titles.foreach(GridPane.setMargin(_, new Insets(10, 0, 0, 10)))
 
   val tabDescription = new Text("Description")
   tabDescription.setFont(Font.font(null, FontWeight.BOLD, -1))
 
   val descriptions = List(
     tabDescription,
+    new Text("Shows all game categories and allows you to browse games by category."),
     new Text("Allows you to find all your friends who own a certain game."),
     new Text("Allows you to view all of your paid invoices and request a refund."),
-    new Text("Shows all game categories and allows you to browse games by category.")
+    new Text("Allows you to manage your payment methods."),
+    new Text("Allows you to purchase the games in your shopping cart with a registered payment method.")
   )
-  descriptions.foreach(GridPane.setHalignment(_, HPos.CENTER))
+  descriptions.foreach(GridPane.setMargin(_, new Insets(10, 0, 0, 0)))
 
   val titleColumn = new ColumnConstraints()
-  titleColumn.setPercentWidth(30.0)
+  titleColumn.setPercentWidth(20.0)
   val descriptionColumn = new ColumnConstraints()
-  descriptionColumn.setPercentWidth(70.0)
+  descriptionColumn.setPercentWidth(80.0)
   mainPane.getColumnConstraints.addAll(titleColumn, descriptionColumn)
 
   mainPane.addColumn(0, titles: _*)
   mainPane.addColumn(1, descriptions: _*)
-
-  mainPane.getChildren.forEach(GridPane.setMargin(_, new Insets(10, 0, 10, 0)))
 
   setContent(mainPane)
 }

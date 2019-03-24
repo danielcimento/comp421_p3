@@ -1,11 +1,13 @@
 package ui
 
+import java.util.UUID
+
 import db.DatabaseInterface
 import javafx.geometry.{HPos, Insets}
 import javafx.scene.control._
 import javafx.scene.layout.{ColumnConstraints, GridPane, Priority}
 
-class CategoriesTab(dbInterface: DatabaseInterface) extends Tab {
+class CategoriesTab(dbInterface: DatabaseInterface, userId: UUID) extends Tab {
   setText("Browse by Category")
 
   val rootPane = new GridPane()
@@ -19,7 +21,7 @@ class CategoriesTab(dbInterface: DatabaseInterface) extends Tab {
   GridPane.setHalignment(searchButton, HPos.RIGHT)
   GridPane.setMargin(searchButton, new Insets(10, 10, 0, 0))
 
-  dbInterface.getAllCategories().foreach(categoriesDropdown.getItems.add)
+  setOnSelectionChanged(_ => categoriesDropdown.getItems.setAll(dbInterface.getAllCategories().toList: _*))
 
   searchButton.setOnAction(_ => {
     results.getItems.clear()
@@ -30,6 +32,7 @@ class CategoriesTab(dbInterface: DatabaseInterface) extends Tab {
 
   rootPane.addRow(0, categoriesLabel, categoriesDropdown, searchButton)
 
+  // TODO: Add to cart option
   val results = new ListView[String]()
   results.setEditable(false)
   results.getItems.addListener(_ => results.setDisable(results.getItems.isEmpty))
