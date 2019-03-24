@@ -177,9 +177,6 @@ class DatabaseInterface(val password: String) {
   }
 
   def checkout(user: UUID, paymentId: UUID, recipient: Option[String]): Unit = {
-    // TODO: Create a new invoice object
-    // TODO: Associate all the games in the user's shopping cart with the invoice at their current price
-    // TODO: Add all the games to a user's owned games
     val recipId = recipient map {
       recipName => val recip = connection.prepareStatement(
         """
@@ -468,8 +465,6 @@ class DatabaseInterface(val password: String) {
 
     val url: String = s"jdbc:postgresql://$rhost:$lport/cs421"
     DriverManager.getConnection(url, username, password)
-
-    // TODO: Make sure we close connection on termination.
   }
 
   def close() = {

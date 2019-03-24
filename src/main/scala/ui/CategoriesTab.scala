@@ -32,7 +32,6 @@ class CategoriesTab(dbInterface: DatabaseInterface, userId: UUID) extends Tab {
 
   rootPane.addRow(0, categoriesLabel, categoriesDropdown, searchButton)
 
-  // TODO: Add to cart option
   val results = new ListView[String]()
   results.setEditable(false)
   results.getItems.addListener(_ => results.setDisable(results.getItems.isEmpty))

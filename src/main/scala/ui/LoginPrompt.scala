@@ -3,9 +3,11 @@ package ui
 import javafx.geometry.HPos
 import javafx.scene.control.ButtonBar.ButtonData
 import javafx.scene.control._
+import javafx.scene.effect.DropShadow
 import javafx.scene.layout.{ColumnConstraints, GridPane}
+import javafx.scene.paint.Color
 
-class LoginPrompt extends Dialog[Option[(String, String)]] {
+class LoginPrompt(error: Boolean) extends Dialog[Option[(String, String)]] {
   setTitle("Login")
   setHeaderText("Please type in the database password for cs421g51 and the user you wish to identify as.")
 
@@ -52,4 +54,17 @@ class LoginPrompt extends Dialog[Option[(String, String)]] {
       None
     }
   })
+
+  val depth = 70 //Setting the uniform variable for the glow width and height
+
+  val borderGlow= new DropShadow()
+  borderGlow.setOffsetY(0f)
+  borderGlow.setOffsetX(0f)
+  borderGlow.setColor(Color.RED)
+  borderGlow.setWidth(depth)
+  borderGlow.setHeight(depth)
+
+  if(error) {
+    dbPassword.setEffect(borderGlow) //Apply the borderGlow effect to the JavaFX node
+  }
 }
