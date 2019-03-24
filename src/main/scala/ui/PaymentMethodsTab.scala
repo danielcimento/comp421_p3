@@ -1,8 +1,10 @@
 package ui
 
+import java.sql.Date
 import java.util.UUID
 
 import db.DatabaseInterface
+import javafx.beans.property.StringProperty
 import javafx.beans.value.{ChangeListener, ObservableValue}
 import javafx.geometry.Insets
 import javafx.scene.control._
@@ -10,6 +12,9 @@ import javafx.scene.layout.{ColumnConstraints, GridPane, Priority}
 
 class PaymentMethodsTab(dbInterface: DatabaseInterface, userId: UUID) extends Tab {
   setText("Payment Methods")
+  setOnSelectionChanged(_ => {
+    refreshPaymentMethods()
+  })
 
   val rootPane = new GridPane
 
@@ -28,9 +33,20 @@ class PaymentMethodsTab(dbInterface: DatabaseInterface, userId: UUID) extends Ta
   val paypalAdd = new Button("Add")
   GridPane.setHgrow(paypalAdd, Priority.ALWAYS)
   GridPane.setMargin(paypalAdd, new Insets(0, 5, 0, 5))
+  paypalAdd.setOnAction(_ => {
+    dbInterface.addPaypal(userId, paypalEntry.getText)
+    refreshPaymentMethods()
+  })
+
   val paypalRemove = new Button("Delete")
   GridPane.setHgrow(paypalRemove, Priority.ALWAYS)
   GridPane.setMargin(paypalRemove, new Insets(0, 10, 0, 0))
+  paypalRemove.setDisable(true)
+  paypalAccounts.getSelectionModel.selectedItemProperty().addListener((_, _, newVal) => paypalRemove.setDisable(newVal == null))
+  paypalRemove.setOnAction(_ => {
+    dbInterface.deletePaypal(paypalAccounts.getSelectionModel.getSelectedItem)
+    refreshPaymentMethods()
+  })
 
   val cardsLabel = new Label("Credit/Debit Cards")
   GridPane.setMargin(cardsLabel, new Insets(5, 0, 0, 10))
@@ -48,6 +64,10 @@ class PaymentMethodsTab(dbInterface: DatabaseInterface, userId: UUID) extends Ta
       }
     }
   })
+  cardNumberField.textProperty().addListener((observable, oldValue, newValue) =>
+    if (newValue.length > 12) observable.asInstanceOf[StringProperty].setValue(oldValue)
+  )
+
   cardNumberField.setPromptText("New Card Number")
 
   GridPane.setMargin(cardNumberField, new Insets(0, 5, 5, 10))
@@ -62,10 +82,21 @@ class PaymentMethodsTab(dbInterface: DatabaseInterface, userId: UUID) extends Ta
   val cardAdd = new Button("Add")
   GridPane.setHgrow(cardAdd, Priority.ALWAYS)
   GridPane.setMargin(cardAdd, new Insets(0, 10, 5, 0))
+  cardAdd.setOnAction(_ => {
+    val (cardNum, exp, cardTy) = (cardNumberField.getText, expiration.getValue, cardType.getValue)
+    dbInterface.addCard(userId, cardNum, Date.valueOf(exp), cardTy)
+    refreshPaymentMethods()
+  })
+
   val cardDelete = new Button("Delete")
+  cardDelete.setDisable(true)
   GridPane.setHgrow(cardDelete, Priority.ALWAYS)
   GridPane.setMargin(cardDelete, new Insets(0, 10, 5, 0))
-
+  cards.getSelectionModel.selectedItemProperty().addListener((_, _, newVal) => cardDelete.setDisable(newVal == null))
+  cardDelete.setOnAction(_ => {
+    dbInterface.deleteCard(cards.getSelectionModel.getSelectedItem.substring(0, 12))
+    refreshPaymentMethods()
+  })
 
   rootPane.addRow(0, paypalLabel)
   rootPane.addRow(1, paypalAccounts)
@@ -91,4 +122,8 @@ class PaymentMethodsTab(dbInterface: DatabaseInterface, userId: UUID) extends Ta
 
   setContent(rootPane)
 
+  private def refreshPaymentMethods(): Unit = {
+    paypalAccounts.getItems.setAll(dbInterface.getPaypalAccounts(userId): _*)
+    cards.getItems.setAll(dbInterface.getCards(userId): _*)
+  }
 }

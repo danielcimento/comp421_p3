@@ -303,6 +303,144 @@ class DatabaseInterface(val password: String) {
     }
   }
 
+  def getPaypalAccounts(userId: UUID): List[String] = {
+    val query = connection.prepareStatement(
+      """
+        | select email_address from payment_methods p, paypal_accounts pp
+        | where p.payment_id = pp.payment_id
+        | and p.payment_id not in (select payment_id from invoices)
+        | and p.user_id = (?);
+      """.stripMargin)
+    query.setObject(1, userId)
+
+    val rs = query.executeQuery()
+    new Iterator[String] {
+      override def hasNext: Boolean = rs.next()
+      override def next(): String = rs.getString("email_address")
+    }.toList
+  }
+
+  def getCards(userId: UUID): List[String] = {
+    val query = connection.prepareStatement(
+      """
+        | select card_number, expr_date, card_type from cards c, payment_methods p
+        | where p.payment_id = c.payment_id
+        | and p.payment_id not in (select payment_id from invoices)
+        | and p.user_id = (?);
+      """.stripMargin)
+    query.setObject(1, userId)
+
+    val rs = query.executeQuery()
+    new Iterator[String] {
+      override def hasNext: Boolean = rs.next()
+      override def next(): String = s"${rs.getString("card_number")} (Exp: ${rs.getDate("expr_date")}) [${rs.getString("card_type")}]"
+    }.toList
+  }
+
+  def deletePaypal(email: String): Unit = {
+    val pidStatement = connection.prepareStatement(
+      """
+        | select payment_id from paypal_accounts where email_address = (?) limit 1;
+      """.stripMargin)
+    pidStatement.setString(1, email)
+
+    val rs = pidStatement.executeQuery()
+    val ids = new Iterator[UUID] {
+      override def hasNext: Boolean = rs.next()
+      override def next(): UUID = rs.getObject("payment_id").asInstanceOf[UUID]
+    }.toList
+
+    ids.foreach(id => {
+      val del1 = connection.prepareStatement(
+        """
+          | delete from paypal_accounts where payment_id = (?)
+        """.stripMargin)
+      del1.setObject(1, id)
+      del1.executeUpdate()
+
+      val del2 = connection.prepareStatement(
+        """
+          | delete from payment_methods where payment_id = (?)
+        """.stripMargin)
+      del2.setObject(1, id)
+      del2.executeUpdate()
+    })
+  }
+
+  def deleteCard(cardNumber: String): Unit = {
+    val pidStatement = connection.prepareStatement(
+      """
+        | select payment_id from cards where card_number = (?) limit 1;
+      """.stripMargin)
+    pidStatement.setString(1, cardNumber)
+
+    val rs = pidStatement.executeQuery()
+    val ids = new Iterator[UUID] {
+      override def hasNext: Boolean = rs.next()
+      override def next(): UUID = rs.getObject("payment_id").asInstanceOf[UUID]
+    }.toList
+
+    ids.foreach(id => {
+      val del1 = connection.prepareStatement(
+        """
+          | delete from cards where payment_id = (?)
+        """.stripMargin)
+      del1.setObject(1, id)
+      del1.executeUpdate()
+
+      val del2 = connection.prepareStatement(
+        """
+          | delete from payment_methods where payment_id = (?)
+        """.stripMargin)
+      del2.setObject(1, id)
+      del2.executeUpdate()
+    })
+  }
+
+  def addPaypal(user: UUID, email: String): Unit = {
+    if(email.trim.isEmpty) return
+
+    val newId = UUID.randomUUID()
+    val sql = connection.prepareStatement(
+      """
+        | insert into payment_methods values ((?), true, (?));
+      """.stripMargin)
+    sql.setObject(1, newId)
+    sql.setObject(2, user)
+    sql.executeUpdate()
+
+    val sql2 = connection.prepareStatement(
+      """
+        | insert into paypal_accounts values ((?), (?));
+      """.stripMargin)
+    sql2.setObject(1, newId)
+    sql2.setString(2, email)
+    sql2.executeUpdate()
+  }
+
+  def addCard(user: UUID, cardNum: String, exp: Date, cardType: String): Unit = {
+    if(cardNum.length != 12 || exp == null) return
+
+    val newId = UUID.randomUUID()
+    val sql = connection.prepareStatement(
+      """
+        | insert into payment_methods values ((?), false, (?));
+      """.stripMargin)
+    sql.setObject(1, newId)
+    sql.setObject(2, user)
+    sql.executeUpdate()
+
+    val sql2 = connection.prepareStatement(
+      """
+        | insert into cards values ((?), (?), (?), (?));
+      """.stripMargin)
+    sql2.setObject(1, newId)
+    sql2.setString(2, cardNum)
+    sql2.setDate(3, exp)
+    sql2.setString(4, cardType)
+    sql2.executeUpdate()
+  }
+
   private def establishConnection: Connection = {
     val lport = 5432
     val rhost = "localhost"
