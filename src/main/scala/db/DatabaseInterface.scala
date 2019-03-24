@@ -9,7 +9,7 @@ import com.jcraft.jsch._
 // This class will hold all the logic that connects to the database and executes our queries
 // We aren't using encryption for our password in the app, because we aren't storing it anywhere
 class DatabaseInterface(val password: String) {
-  val connection: Connection = establishConnection
+  val (connection, session) = establishConnection
 
   def getFriendsWhoOwn(userId: UUID, gameName: String): Iterator[String] = {
     val statement = connection.prepareStatement(
@@ -438,16 +438,17 @@ class DatabaseInterface(val password: String) {
     sql2.executeUpdate()
   }
 
-  private def establishConnection: Connection = {
+  private def establishConnection: (Connection, Session) = {
     val lport = 5432
     val rhost = "localhost"
     val rport = 5432
 
     val username = "cs421g51"
 
+    var session: Session = null
     try {
       val jsch = new JSch()
-      val session = jsch.getSession(username, "comp421.cs.mcgill.ca", 22)
+      session = jsch.getSession(username, "comp421.cs.mcgill.ca", 22)
       session.setPassword(password)
       session.setConfig("StrictHostKeyChecking", "no")
       session.connect()
@@ -464,10 +465,11 @@ class DatabaseInterface(val password: String) {
     }
 
     val url: String = s"jdbc:postgresql://$rhost:$lport/cs421"
-    DriverManager.getConnection(url, username, password)
+    (DriverManager.getConnection(url, username, password), session)
   }
 
   def close() = {
     connection.close()
+    session.disconnect()
   }
 }
