@@ -42,6 +42,19 @@ class CategoriesTab(dbInterface: DatabaseInterface, userId: UUID) extends Tab {
 
   rootPane.addRow(1, results)
 
+  val addToCart = new Button("Add to Cart")
+  addToCart.setOnAction(_ => {
+    val option = results.getSelectionModel.getSelectedItem
+    if(option != null) {
+      dbInterface.addToCart(userId, option.split('(').head.trim)
+    }
+  })
+
+
+  rootPane.add(addToCart, 2, 2)
+  GridPane.setHalignment(addToCart, HPos.RIGHT)
+  GridPane.setMargin(addToCart, new Insets(3, 10, 5, 0))
+
   val cc1 = new ColumnConstraints()
   cc1.setPercentWidth(20)
   val cc2 = new ColumnConstraints()

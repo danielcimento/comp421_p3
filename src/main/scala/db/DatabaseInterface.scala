@@ -152,7 +152,8 @@ class DatabaseInterface(val password: String) {
     val statement = connection.prepareStatement(
       """
         | insert into shopping_cart (user_id, game_id)
-        | select (?), game_id from games where name = (?);
+        | select (?), game_id from games where name = (?)
+        | on conflict do nothing;
       """.stripMargin)
 
     statement.setObject(1, user)
@@ -161,25 +162,87 @@ class DatabaseInterface(val password: String) {
     statement.executeUpdate()
   }
 
-  def checkout(user: UUID, recipient: String): Unit = {
-    // TODO: Check if the recipient is eligible to receive the games
+  def removeFromCart(user: UUID, gameName: String): Unit = {
+    val statement = connection.prepareStatement(
+      """
+        | delete from shopping_cart
+        | where user_id = (?)
+        | and game_id = (select game_id from games where name = (?));
+      """.stripMargin)
+
+    statement.setObject(1, user)
+    statement.setString(2, gameName)
+
+    statement.executeUpdate()
+  }
+
+  def checkout(user: UUID, paymentId: UUID, recipient: Option[String]): Unit = {
     // TODO: Create a new invoice object
     // TODO: Associate all the games in the user's shopping cart with the invoice at their current price
     // TODO: Add all the games to a user's owned games
-    val statement = connection.prepareStatement(
+    val recipId = recipient map {
+      recipName => val recip = connection.prepareStatement(
+        """
+          | select user_id from users where username = (?) limit 1;
+        """.stripMargin)
+
+        recip.setString(1, recipName)
+        val rs = recip.executeQuery()
+
+        if(!rs.next()) return
+
+        rs.getObject("user_id").asInstanceOf[UUID]
+    }
+
+    val newId = UUID.randomUUID()
+
+    val createInvoice = connection.prepareStatement(
       """
-        |
-        |
+        | insert into invoices values ((?), (?), (?), (?), NOW(), false);
+      """.stripMargin)
+    createInvoice.setObject(1, newId)
+    createInvoice.setObject(2, user)
+    createInvoice.setObject(3, recipId.getOrElse(user))
+    createInvoice.setObject(4, paymentId)
+    createInvoice.executeUpdate()
+
+    val associateItems = connection.prepareStatement(
+      """
+        | insert into contains (invoice_id, game_id, sell_price, currency)
+        | select (?), s.game_id, value, 'USD' from shopping_cart s, pricings p
+        | where p.game_id = s.game_id and p.currency = 'USD' and s.user_id = (?);
+      """.stripMargin)
+    associateItems.setObject(1, newId)
+    associateItems.setObject(2, user)
+    associateItems.executeUpdate()
+
+    val giveGames = connection.prepareStatement(
+      """
+        | insert into owns (user_id, game_id)
+        | select (?), game_id from shopping_cart s
+        | where s.user_id = (?)
+        | on conflict do nothing;
+      """.stripMargin)
+    giveGames.setObject(1, recipId.getOrElse(user))
+    giveGames.setObject(2, user)
+
+    giveGames.executeUpdate()
+
+    val cleanCart = connection.prepareStatement(
+      """
         | delete from shopping_cart where user_id = (?);
       """.stripMargin)
+    cleanCart.setObject(1, user)
+
+    cleanCart.executeUpdate()
   }
 
   def getShoppingCart(user: UUID): List[(String, java.math.BigDecimal)] = {
     val select = connection.prepareStatement(
       """
-        | select name, value from shopping_cart s
-        | join (games g join pricings p on g.game_id = p.game_id) pg on pg.game_id = g.game_id
-        | where currency = 'USD' and s.user_id = (?);
+        | select name, value from shopping_cart s, games g, pricings p
+        |	where currency = 'USD' and s.user_id = (?)
+        |	and s.game_id = g.game_id and s.game_id = p.game_id;
       """.stripMargin)
     select.setObject(1, user)
 
@@ -191,13 +254,36 @@ class DatabaseInterface(val password: String) {
     rawResults.map(is => (is(0).asInstanceOf[String], is(1).asInstanceOf[java.math.BigDecimal])).toList
   }
 
-  def ownsAnyGamesInCart(user: UUID): Boolean = {
+  def getPaymentMethods(userId: UUID): Iterator[String] = {
     val select = connection.prepareStatement(
       """
-        | select * from shopping_cart s join owns o on o.game_id = s.game_id and o.user_id = s.user_id where s.user_id = (?);
+        | select payment_id from payment_methods where user_id = (?);
       """.stripMargin)
+    select.setObject(1, userId)
 
-    select.setObject(1, user)
+    val rs = select.executeQuery()
+    new Iterator[String] {
+      def hasNext: Boolean = rs.next()
+      def next() = rs.getString("payment_id")
+    }
+  }
+
+  def ownsAnyGamesInCart(cartOwner: UUID, recipient: Option[String]): Boolean = {
+    val select = recipient match {
+      case None => connection.prepareStatement(
+        """
+          | select * from shopping_cart s join owns o on o.game_id = s.game_id and o.user_id = s.user_id where s.user_id = (?);
+        """.stripMargin)
+      case Some(_) => connection.prepareStatement(
+        """
+          | select s.game_id from shopping_cart s
+          | where s.user_id = (?)
+          | and s.game_id in (select o.game_id from owns o
+          | where o.user_id = (select user_id from users where username = (?)));
+        """.stripMargin)
+    }
+    select.setObject(1, cartOwner)
+    recipient.foreach(name => select.setString(2, name))
 
     select.executeQuery().next()
   }
